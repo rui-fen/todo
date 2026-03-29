@@ -18,9 +18,27 @@ export class TodoDependency {
 export const TodoDependencySchema =
   SchemaFactory.createForClass(TodoDependency);
 
+// unique
 TodoDependencySchema.index(
-  { prerequisiteId: 1, dependentId: 1, deletedAt: 1 },
-  { unique: true },
+  { prerequisiteId: 1, dependentId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { deletedAt: null },
+  },
 );
-TodoDependencySchema.index({ dependentId: 1, deletedAt: 1 });
-TodoDependencySchema.index({ prerequisiteId: 1, deletedAt: 1 });
+
+// dependentId
+TodoDependencySchema.index(
+  { dependentId: 1 },
+  {
+    partialFilterExpression: { deletedAt: null },
+  },
+);
+
+// prerequisiteId
+TodoDependencySchema.index(
+  { prerequisiteId: 1 },
+  {
+    partialFilterExpression: { deletedAt: null },
+  },
+);
