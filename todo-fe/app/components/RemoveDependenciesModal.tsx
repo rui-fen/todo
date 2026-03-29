@@ -63,7 +63,9 @@ export function RemoveDependenciesModal({
         mask={{ closable: false }}
         closable
         destroyOnHidden
-        title={todo ? `Remove Todos: ${todo.name}` : "Remove Todos"}
+        title={
+          todo ? `Remove Dependencies: ${todo.name}` : "Remove Dependencies"
+        }
         open={open}
         okText="OK"
         afterOpenChange={nextOpen => {
@@ -107,7 +109,7 @@ export function RemoveDependenciesModal({
                         }
                       </Tag>
                       <Tag
-                        color={mapPriority[item.priority]}
+                        color={mapPriority[item.priority].color}
                         variant={"outlined"}
                       >
                         {

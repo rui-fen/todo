@@ -7,6 +7,7 @@ import {
   TodoSearchResponse,
   AddDependenciesPayload,
   TodoSubgraph,
+  TodoHistory,
 } from "./data/types"
 
 const TODO_API = "/api"
@@ -55,5 +56,9 @@ export const todoApi = {
       .delete<
         ApiResponse<{ dependentId: string; removed: number }>
       >(`${TODO_API}/todo/${id}/dependencies`, { data })
+      .then(res => res.data),
+  getHistory: (id: string) =>
+    axios
+      .get<ApiResponse<TodoHistory[]>>(`${TODO_API}/todo/${id}/history`)
       .then(res => res.data),
 }

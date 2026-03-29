@@ -100,6 +100,18 @@ export interface TodoSearchResponse {
   results: TodoItem[]
 }
 
+export interface TodoHistory {
+  _id: string
+  todoId: string
+  changedAt: string
+  changes: {
+    status: {
+      from: Status
+      to: Status
+    }
+  }
+}
+
 export interface AddDependenciesPayload {
   prerequisiteIds: string[]
 }

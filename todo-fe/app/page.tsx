@@ -10,6 +10,7 @@ import { ApiResponse, todoApi } from "./apis"
 import { columns } from "./data/columns"
 import { DependencyModal } from "./components/DependencyModal"
 import { GraphModal } from "./components/GraphModal"
+import { HistoryDrawer } from "./components/HistoryDrawer"
 import { RemoveDependenciesModal } from "./components/RemoveDependenciesModal"
 import { TodoModal } from "./components/TodoModal"
 import { TodoSearchForm } from "./components/TodoSearchForm"
@@ -28,6 +29,10 @@ export default function Home() {
   const [isRemoveDependencyModalOpen, setIsRemoveDependencyModalOpen] =
     useState(false)
   const [isGraphModalOpen, setIsGraphModalOpen] = useState(false)
+  const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false)
+  const [historyTodo, setHistoryTodo] = useState<TodoItem | undefined>(
+    undefined,
+  )
   const [editingTodo, setEditingTodo] = useState<TodoItem | undefined>(
     undefined,
   )
@@ -144,6 +149,10 @@ export default function Home() {
             setGraphTodo(record)
             setIsGraphModalOpen(true)
           },
+          onShowHistory: record => {
+            setHistoryTodo(record)
+            setIsHistoryDrawerOpen(true)
+          },
           onDelete: record => {
             deleteTodoMutation.mutate(record._id)
           },
@@ -194,6 +203,14 @@ export default function Home() {
         onCancel={() => {
           setIsGraphModalOpen(false)
           setGraphTodo(undefined)
+        }}
+      />
+      <HistoryDrawer
+        open={isHistoryDrawerOpen}
+        todo={historyTodo}
+        onClose={() => {
+          setIsHistoryDrawerOpen(false)
+          setHistoryTodo(undefined)
         }}
       />
     </main>

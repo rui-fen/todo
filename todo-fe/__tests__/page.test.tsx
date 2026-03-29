@@ -40,6 +40,10 @@ vi.mock("../app/apis", () => ({
   todoApi: {
     search: vi.fn(),
     deleteTodo: vi.fn(),
+    getHistory: vi.fn().mockResolvedValue({
+      success: true,
+      data: [],
+    }),
   },
 }))
 
@@ -113,50 +117,69 @@ vi.mock("../app/components/RemoveDependenciesModal", () => ({
 }))
 
 vi.mock("../app/components/GraphModal", () => ({
-  GraphModal: ({
-    open,
-    todo,
-  }: {
-    open: boolean
-    todo?: { name?: string }
-  }) => (
+  GraphModal: ({ open, todo }: { open: boolean; todo?: { name?: string } }) => (
     <div data-testid="graph-modal">
       {open ? `open:${todo?.name ?? ""}` : "closed"}
     </div>
   ),
 }))
 
-vi.mock("../app/data/columns", () => ({
-  columns: columnsMock.mockImplementation(({
-    onEdit,
-    onDelete,
-    onAddDependency,
-    onRemoveDependency,
-    onShowGraph,
+vi.mock("../app/components/HistoryDrawer", () => ({
+  HistoryDrawer: ({
+    open,
+    todo,
   }: {
-    onEdit: (record: TodoRecord) => void
-    onDelete: (record: TodoRecord) => void
-    onAddDependency: (record: TodoRecord) => void
-    onRemoveDependency: (record: TodoRecord) => void
-    onShowGraph: (record: TodoRecord) => void
-  }) => [
-    {
-      title: "Actions",
-      render: (_: unknown, record: TodoRecord) => (
-        <div>
-          <button onClick={() => onEdit(record)}>edit-{record._id}</button>
-          <button onClick={() => onAddDependency(record)}>
-            add-dependency-{record._id}
-          </button>
-          <button onClick={() => onRemoveDependency(record)}>
-            remove-dependency-{record._id}
-          </button>
-          <button onClick={() => onShowGraph(record)}>graph-{record._id}</button>
-          <button onClick={() => onDelete(record)}>delete-{record._id}</button>
-        </div>
-      ),
-    },
-  ]),
+    open: boolean
+    todo?: { name?: string }
+  }) => (
+    <div data-testid="history-drawer">
+      {open ? `open:${todo?.name ?? ""}` : "closed"}
+    </div>
+  ),
+}))
+
+vi.mock("../app/data/columns", () => ({
+  columns: columnsMock.mockImplementation(
+    ({
+      onEdit,
+      onDelete,
+      onAddDependency,
+      onRemoveDependency,
+      onShowGraph,
+      onShowHistory,
+    }: {
+      onEdit: (record: TodoRecord) => void
+      onDelete: (record: TodoRecord) => void
+      onAddDependency: (record: TodoRecord) => void
+      onRemoveDependency: (record: TodoRecord) => void
+      onShowGraph: (record: TodoRecord) => void
+      onShowHistory: (record: TodoRecord) => void
+    }) => [
+      {
+        title: "Actions",
+        render: (_: unknown, record: TodoRecord) => (
+          <div>
+            <button onClick={() => onEdit(record)}>edit-{record._id}</button>
+            <button onClick={() => onAddDependency(record)}>
+              add-dependency-{record._id}
+            </button>
+            <button onClick={() => onRemoveDependency(record)}>
+              remove-dependency-{record._id}
+            </button>
+            <button onClick={() => onShowGraph(record)}>
+              graph-{record._id}
+            </button>
+            <button onClick={() => onShowHistory(record)}>
+              history-{record._id}
+            </button>
+            <button onClick={() => onDelete(record)}>
+              delete-{record._id}
+            </button>
+          </div>
+        ),
+      },
+    ],
+  ),
 }))
 
 vi.mock("antd", async () => {

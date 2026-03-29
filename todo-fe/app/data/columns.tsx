@@ -1,34 +1,45 @@
 import { Tag, Button, Tooltip, Popconfirm, Divider, Badge } from "antd"
 import type { ColumnsType } from "antd/es/table"
+import { dependencyStatusOptions, recurrenceOptions } from "./options"
 import {
-  dependencyStatusOptions,
-  priorityOptions,
-  recurrenceOptions,
-  statusOptions,
-} from "./options"
-import {
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  SaveOutlined,
+  CheckOutlined,
+  PushpinOutlined,
   DeploymentUnitOutlined,
   SyncOutlined,
+  InboxOutlined,
 } from "@ant-design/icons"
 import { TodoItem, Recurrence, DependencyStatus } from "../data/types"
 
 export const mapStatus: Record<
   string,
-  { icon: React.ReactNode; color: string }
+  { icon: React.ReactNode; color: string; label: string }
 > = {
-  NOT_STARTED: { icon: <ClockCircleOutlined />, color: "gold" },
-  IN_PROGRESS: { icon: <SyncOutlined spin />, color: "blue" },
-  COMPLETED: { icon: <CheckCircleOutlined />, color: "green" },
-  ARCHIVED: { icon: <SaveOutlined />, color: "default" },
+  NOT_STARTED: {
+    icon: <PushpinOutlined />,
+    color: "gold",
+    label: "Not Started",
+  },
+  IN_PROGRESS: {
+    icon: <SyncOutlined />,
+    color: "blue",
+    label: "In Progress",
+  },
+  COMPLETED: {
+    icon: <CheckOutlined />,
+    color: "green",
+    label: "Completed",
+  },
+  ARCHIVED: {
+    icon: <InboxOutlined />,
+    color: "default",
+    label: "Archived",
+  },
 }
 
-export const mapPriority: Record<string, string> = {
-  LOW: "default",
-  MEDIUM: "blue",
-  HIGH: "red",
+export const mapPriority: Record<string, { color: string; label: string }> = {
+  LOW: { color: "default", label: "Low" },
+  MEDIUM: { color: "blue", label: "Medium" },
+  HIGH: { color: "red", label: "High" },
 }
 
 export const columns = ({
@@ -39,12 +50,14 @@ export const columns = ({
   onShowGraph,
   isDeleting,
   deletingId,
+  onShowHistory,
 }: {
   onEdit: (record: TodoItem) => void
   onDelete: (record: TodoItem) => void
   onAddDependency: (record: TodoItem) => void
   onRemoveDependency: (record: TodoItem) => void
   onShowGraph: (record: TodoItem) => void
+  onShowHistory: (record: TodoItem) => void
   isDeleting: boolean
   deletingId?: string
 }): ColumnsType<TodoItem> => [
@@ -52,25 +65,6 @@ export const columns = ({
     title: "Name",
     dataIndex: "name",
     key: "name",
-    render: (name: string, record: TodoItem) => {
-      return (
-        <Tooltip
-          title={
-            <>
-              <div>Id: {record._id}</div>
-              <div>
-                Created At: {new Date(record.createdAt).toLocaleString()}
-              </div>
-              <div>
-                UpdatedAt At: {new Date(record.createdAt).toLocaleString()}
-              </div>
-            </>
-          }
-        >
-          {name}
-        </Tooltip>
-      )
-    },
   },
   {
     title: "Description",
@@ -88,7 +82,7 @@ export const columns = ({
           color={mapStatus[status].color}
           variant={"outlined"}
         >
-          {statusOptions.find(option => option.value === status)?.label}
+          {mapStatus[status].label}
         </Tag>
       )
     },
@@ -99,8 +93,8 @@ export const columns = ({
     key: "priority",
     render: (priority: string) => {
       return (
-        <Tag color={mapPriority[priority]} variant={"filled"}>
-          {priorityOptions.find(option => option.value === priority)?.label}
+        <Tag color={mapPriority[priority].color} variant={"filled"}>
+          {mapPriority[priority].label}
         </Tag>
       )
     },
@@ -166,34 +160,48 @@ export const columns = ({
     key: "action",
     render: (_, record) => (
       <>
-        <Button
-          icon={<DeploymentUnitOutlined />}
-          size="small"
-          color="magenta"
-          variant="text"
-          onClick={() => onShowGraph(record)}
-        >
-          Graph
-        </Button>
+        <Tooltip title="View dependency graph">
+          <Button
+            icon={<DeploymentUnitOutlined />}
+            size="small"
+            color="magenta"
+            variant="text"
+            onClick={() => onShowGraph(record)}
+          >
+            Graph
+          </Button>
+        </Tooltip>
         <Divider orientation="vertical" />
         <Button
           color="primary"
           size="small"
           variant="text"
-          onClick={() => onAddDependency(record)}
+          onClick={() => onShowHistory(record)}
         >
-          Add
+          History
         </Button>
         <Divider orientation="vertical" />
-        <Button
-          color="primary"
-          size="small"
-          variant="text"
-          onClick={() => onRemoveDependency(record)}
-        >
-          Remove
-        </Button>
-
+        <Tooltip title="Add dependencies to this todo">
+          <Button
+            color="primary"
+            size="small"
+            variant="text"
+            onClick={() => onAddDependency(record)}
+          >
+            Add
+          </Button>
+        </Tooltip>
+        <Divider orientation="vertical" />
+        <Tooltip title="Remove dependencies to this todo">
+          <Button
+            color="primary"
+            size="small"
+            variant="text"
+            onClick={() => onRemoveDependency(record)}
+          >
+            Remove
+          </Button>
+        </Tooltip>
         <Divider orientation="vertical" />
         <Button
           size="small"
