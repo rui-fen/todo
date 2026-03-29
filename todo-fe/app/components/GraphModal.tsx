@@ -72,7 +72,7 @@ const buildMermaidGraph = (data: TodoSubgraph) => {
     const statusLabel = statusLabelMap.get(node.status) ?? node.status
     const label = [
       "<div style='padding:2px 4px; line-height:1.2;'>",
-      `<div style='font-size:14px; font-weight:600;'>${escapeMermaidLabel(node.name)}</div>`,
+      `<div style='font-size:14px; font-weight:500;'>${escapeMermaidLabel(node.name)}</div>`,
       `<div style='font-size:12px; opacity:0.72;'>${escapeMermaidLabel(statusLabel)}</div>`,
       "</div>",
     ].join("")
