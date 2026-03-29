@@ -104,6 +104,17 @@ describe('TodosController', () => {
     );
   });
 
+  it('passes an empty array when addDependencies body is missing ids', async () => {
+    const id = mockTodo._id;
+    const result = { dependentId: id, created: 0 };
+    todoService.addDependencies.mockResolvedValue(result);
+
+    await expect(
+      controller.addDependencies(id, {} as AddDependenciesDto),
+    ).resolves.toEqual(result);
+    expect(todoService.addDependencies).toHaveBeenCalledWith(id, []);
+  });
+
   it('removes dependencies', async () => {
     const id = mockTodo._id;
     const body: AddDependenciesDto = {
@@ -119,6 +130,17 @@ describe('TodosController', () => {
       id,
       body.prerequisiteIds,
     );
+  });
+
+  it('passes an empty array when removeDependencies body is missing ids', async () => {
+    const id = mockTodo._id;
+    const result = { dependentId: id, removed: 0 };
+    todoService.removeDependencies.mockResolvedValue(result);
+
+    await expect(
+      controller.removeDependencies(id, {} as AddDependenciesDto),
+    ).resolves.toEqual(result);
+    expect(todoService.removeDependencies).toHaveBeenCalledWith(id, []);
   });
 
   it('lists dependencies', async () => {

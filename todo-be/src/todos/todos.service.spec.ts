@@ -247,4 +247,130 @@ describe('TodosService', () => {
     ).resolves.toEqual([]);
     expect(todoModel.find).not.toHaveBeenCalled();
   });
+
+  it('updates todo status and commits transaction when found', async () => {
+    const session = createSession();
+    const id = new Types.ObjectId().toString();
+    const existing = {
+      _id: id,
+      name: 'Task',
+      status: TodoStatus.NOT_STARTED,
+      priority: TodoPriority.MEDIUM,
+      dueDate: undefined,
+      recurrence: undefined,
+    };
+    const updated = {
+      ...existing,
+      status: TodoStatus.COMPLETED,
+    };
+
+    todoModel.db.startSession.mockResolvedValue(session);
+    todoModel.findOne.mockReturnValue(createExecChain(existing));
+    todoModel.findOneAndUpdate.mockReturnValue(createExecChain(updated));
+
+    await expect(
+      service.update(id, { status: TodoStatus.COMPLETED }),
+    ).resolves.toEqual(updated);
+    expect(todoModel.findOneAndUpdate).toHaveBeenCalledWith(
+      { _id: id, deletedAt: null },
+      { $set: { status: TodoStatus.COMPLETED } },
+      expect.objectContaining({
+        returnDocument: 'after',
+        session,
+      }),
+    );
+    expect(session.commitTransaction).toHaveBeenCalled();
+    expect(session.endSession).toHaveBeenCalled();
+  });
+
+  it('returns null and aborts transaction when update target is missing', async () => {
+    const session = createSession();
+    const id = new Types.ObjectId().toString();
+
+    todoModel.db.startSession.mockResolvedValue(session);
+    todoModel.findOne.mockReturnValue(createExecChain(null));
+
+    await expect(
+      service.update(id, { status: TodoStatus.COMPLETED }),
+    ).resolves.toBeNull();
+    expect(session.abortTransaction).toHaveBeenCalled();
+    expect(todoModel.findOneAndUpdate).not.toHaveBeenCalled();
+  });
+
+  it('throws when update enables recurrence without due date', async () => {
+    const session = createSession();
+    const id = new Types.ObjectId().toString();
+    const existing = {
+      _id: id,
+      name: 'Task',
+      status: TodoStatus.NOT_STARTED,
+      priority: TodoPriority.MEDIUM,
+      dueDate: undefined,
+      recurrence: undefined,
+    };
+
+    todoModel.db.startSession.mockResolvedValue(session);
+    todoModel.findOne.mockReturnValue(createExecChain(existing));
+
+    await expect(
+      service.update(id, {
+        recurrence: { type: Recurrence.DAILY },
+      }),
+    ).rejects.toThrow(
+      new BadRequestException(
+        'Due date is required when recurrence is provided',
+      ),
+    );
+    expect(session.abortTransaction).toHaveBeenCalled();
+  });
+
+  it('returns deduplicated subgraph edges', async () => {
+    const rootId = new Types.ObjectId().toString();
+    const sharedPrerequisiteId = new Types.ObjectId();
+    const dependentId = new Types.ObjectId();
+    const graphResult = [
+      {
+        nodeIds: [
+          new Types.ObjectId(rootId),
+          sharedPrerequisiteId,
+          dependentId,
+        ],
+        upstreamEdges: [
+          {
+            prerequisiteId: sharedPrerequisiteId,
+            dependentId,
+          },
+        ],
+        downstreamEdges: [
+          {
+            prerequisiteId: sharedPrerequisiteId,
+            dependentId,
+          },
+        ],
+      },
+    ];
+    todoModel.aggregate.mockReturnValue(createExecChain(graphResult));
+    todoModel.find.mockReturnValue(
+      createExecChain([
+        { _id: rootId, name: 'Root' },
+        { _id: String(sharedPrerequisiteId), name: 'Parent' },
+      ]),
+    );
+
+    const result = await service.getSubgraph(rootId);
+
+    expect(result).toEqual({
+      rootId,
+      nodes: [
+        { _id: rootId, name: 'Root' },
+        { _id: String(sharedPrerequisiteId), name: 'Parent' },
+      ],
+      edges: [
+        {
+          prerequisiteId: String(sharedPrerequisiteId),
+          dependentId: String(dependentId),
+        },
+      ],
+    });
+  });
 });

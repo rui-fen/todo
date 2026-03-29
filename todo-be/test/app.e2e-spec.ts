@@ -49,6 +49,26 @@ describe('Todos API (e2e)', () => {
     updatedAt: '2026-03-29T10:00:00.000Z',
     deletedAt: null,
   };
+  const graphResponse = {
+    rootId: todo._id,
+    nodes: [todo],
+    edges: [
+      {
+        prerequisiteId: '507f1f77bcf86cd799439012',
+        dependentId: todo._id,
+      },
+    ],
+  };
+  const serializedGraphResponse = {
+    rootId: todo._id,
+    nodes: [serializedTodo],
+    edges: [
+      {
+        prerequisiteId: '507f1f77bcf86cd799439012',
+        dependentId: todo._id,
+      },
+    ],
+  };
 
   const todoService = {
     create: jest.fn(),
@@ -187,6 +207,112 @@ describe('Todos API (e2e)', () => {
     );
   });
 
+  it('PATCH /todo/:id updates todo and wraps response', async () => {
+    const updatedTodo = {
+      ...todo,
+      status: TodoStatus.IN_PROGRESS,
+      updatedAt: '2026-03-29T12:00:00.000Z',
+    };
+    const serializedUpdatedTodo = {
+      ...serializedTodo,
+      status: TodoStatus.IN_PROGRESS,
+      updatedAt: '2026-03-29T12:00:00.000Z',
+    };
+    todoService.update.mockResolvedValue(updatedTodo);
+
+    await request(httpServer)
+      .patch(`/todo/${todo._id}`)
+      .send({
+        status: TodoStatus.IN_PROGRESS,
+        description: null,
+      })
+      .expect(200)
+      .expect({
+        success: true,
+        data: serializedUpdatedTodo,
+      });
+
+    expect(todoService.update).toHaveBeenCalledWith(todo._id, {
+      status: TodoStatus.IN_PROGRESS,
+      description: null,
+    });
+  });
+
+  it('PATCH /todo/:id returns 404 when update target is missing', async () => {
+    todoService.update.mockResolvedValue(null);
+
+    const response: Response = await request(httpServer)
+      .patch(`/todo/${todo._id}`)
+      .send({ status: TodoStatus.IN_PROGRESS })
+      .expect(404);
+
+    expect(getResponseMessage(response.body)).toBe(
+      `Todo with id ${todo._id} not found`,
+    );
+  });
+
+  it('DELETE /todo/:id wraps deleted todo response', async () => {
+    todoService.remove.mockResolvedValue(todo);
+
+    await request(httpServer).delete(`/todo/${todo._id}`).expect(200).expect({
+      success: true,
+      data: serializedTodo,
+    });
+
+    expect(todoService.remove).toHaveBeenCalledWith(todo._id);
+  });
+
+  it('GET /todo/:id/subgraph wraps graph response', async () => {
+    todoService.getSubgraph.mockResolvedValue(graphResponse);
+
+    await request(httpServer)
+      .get(`/todo/${todo._id}/subgraph`)
+      .expect(200)
+      .expect({
+        success: true,
+        data: serializedGraphResponse,
+      });
+
+    expect(todoService.getSubgraph).toHaveBeenCalledWith(todo._id);
+  });
+
+  it('GET /todo/:id/subgraph returns 404 when graph is missing', async () => {
+    todoService.getSubgraph.mockResolvedValue(null);
+
+    const response: Response = await request(httpServer)
+      .get(`/todo/${todo._id}/subgraph`)
+      .expect(404);
+
+    expect(getResponseMessage(response.body)).toBe(
+      `Todo with id ${todo._id} not found`,
+    );
+  });
+
+  it('POST /todo/:id/dependencies wraps success response', async () => {
+    todoService.addDependencies.mockResolvedValue({
+      dependentId: todo._id,
+      created: 1,
+    });
+
+    await request(httpServer)
+      .post(`/todo/${todo._id}/dependencies`)
+      .send({
+        prerequisiteIds: ['507f1f77bcf86cd799439012'],
+      })
+      .expect(201)
+      .expect({
+        success: true,
+        data: {
+          dependentId: todo._id,
+          created: 1,
+        },
+      });
+
+    expect(todoService.addDependencies).toHaveBeenCalledWith(todo._id, [
+      '507f1f77bcf86cd799439012',
+    ]);
+  });
+
   it('POST /todo/:id/dependencies validates request body', async () => {
     const response: Response = await request(httpServer)
       .post(`/todo/${todo._id}/dependencies`)
@@ -201,5 +327,30 @@ describe('Todos API (e2e)', () => {
       ]),
     );
     expect(todoService.addDependencies).not.toHaveBeenCalled();
+  });
+
+  it('DELETE /todo/:id/dependencies wraps success response', async () => {
+    todoService.removeDependencies.mockResolvedValue({
+      dependentId: todo._id,
+      removed: 1,
+    });
+
+    await request(httpServer)
+      .delete(`/todo/${todo._id}/dependencies`)
+      .send({
+        prerequisiteIds: ['507f1f77bcf86cd799439012'],
+      })
+      .expect(200)
+      .expect({
+        success: true,
+        data: {
+          dependentId: todo._id,
+          removed: 1,
+        },
+      });
+
+    expect(todoService.removeDependencies).toHaveBeenCalledWith(todo._id, [
+      '507f1f77bcf86cd799439012',
+    ]);
   });
 });
