@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
+import type { AxiosError } from "axios"
 import dayjs from "dayjs"
 import {
   DatePicker,
@@ -26,7 +27,7 @@ import {
   priorityOptions,
   statusOptions,
 } from "../data/options"
-import { todoApi } from "../apis"
+import { ApiResponse, todoApi } from "../apis"
 
 interface TodoModalProps {
   open: boolean
@@ -70,8 +71,10 @@ export function TodoModal({
         onSuccess()
       }
     },
-    onError: error => {
-      messageApi.error(error.message || "Request failed")
+    onError: (error: AxiosError<ApiResponse<unknown>>) => {
+      messageApi.error(
+        error.response?.data?.message || error.message || "Request failed",
+      )
     },
   })
 
@@ -84,8 +87,10 @@ export function TodoModal({
         onSuccess()
       }
     },
-    onError: error => {
-      messageApi.error(error.message || "Request failed")
+    onError: (error: AxiosError<ApiResponse<unknown>>) => {
+      messageApi.error(
+        error.response?.data?.message || error.message || "Request failed",
+      )
     },
   })
 
