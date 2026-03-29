@@ -12,6 +12,10 @@ jest.mock('./schemas/todo-dependency.schema', () => ({
   TodoDependency: class TodoDependency {},
 }));
 
+jest.mock('./schemas/todo-history.schema', () => ({
+  TodoHistory: class TodoHistory {},
+}));
+
 const createExecChain = <T>(result: T) => {
   const chain = {
     session: jest.fn().mockReturnThis(),
@@ -48,6 +52,9 @@ describe('TodosService', () => {
     insertMany: jest.Mock;
     collection: { name: string };
   };
+  let todoHistoryModel: {
+    create: jest.Mock;
+  };
 
   beforeEach(() => {
     todoModel = {
@@ -68,9 +75,14 @@ describe('TodosService', () => {
       collection: { name: 'todo_dependencies' },
     };
 
+    todoHistoryModel = {
+      create: jest.fn(),
+    };
+
     service = new TodosService(
       todoModel as never,
       todoDependencyModel as never,
+      todoHistoryModel as never,
     );
   });
 
@@ -322,6 +334,51 @@ describe('TodosService', () => {
       ),
     );
     expect(session.abortTransaction).toHaveBeenCalled();
+  });
+
+  it('resets recurring todo when completed and records history', async () => {
+    const session = createSession();
+    const id = new Types.ObjectId().toString();
+    const existing = {
+      _id: id,
+      name: 'Recurring Task',
+      status: TodoStatus.IN_PROGRESS,
+      priority: TodoPriority.MEDIUM,
+      dueDate: new Date('2026-03-29T10:00:00.000Z'),
+      recurrence: { type: Recurrence.DAILY },
+    };
+    const updated = {
+      ...existing,
+      status: TodoStatus.COMPLETED,
+    };
+    const nextDueDate = new Date('2026-03-30T10:00:00.000Z'); // next day
+
+    todoModel.db.startSession.mockResolvedValue(session);
+    todoModel.findOne.mockReturnValue(createExecChain(existing));
+    todoModel.findOneAndUpdate.mockReturnValue(createExecChain(updated));
+    todoHistoryModel.create.mockResolvedValue(undefined);
+
+    await expect(
+      service.update(id, { status: TodoStatus.COMPLETED }),
+    ).resolves.toEqual(updated);
+
+    expect(todoModel.updateOne).toHaveBeenCalledWith(
+      { _id: id },
+      { $set: { status: TodoStatus.NOT_STARTED, dueDate: nextDueDate } },
+      { session },
+    );
+    expect(todoHistoryModel.create).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          todoId: new Types.ObjectId(id),
+          changes: {
+            status: { from: TodoStatus.IN_PROGRESS, to: TodoStatus.COMPLETED },
+          },
+        }),
+      ],
+      { session },
+    );
+    expect(session.commitTransaction).toHaveBeenCalled();
   });
 
   it('returns deduplicated subgraph edges', async () => {
