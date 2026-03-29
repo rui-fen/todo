@@ -57,8 +57,10 @@ export const columns = ({
         <Tooltip
           title={
             <>
-              Created At:
-              <div>{new Date(record.createdAt).toLocaleString()}</div>
+              <div>Id: {record._id}</div>
+              <div>
+                Created At: {new Date(record.createdAt).toLocaleString()}
+              </div>
             </>
           }
         >
