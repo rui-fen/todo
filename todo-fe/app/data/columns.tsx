@@ -132,7 +132,7 @@ export const columns = ({
       if (!dueDate) {
         return null
       }
-      return new Date(dueDate).toLocaleString()
+      return new Date(dueDate).toLocaleDateString()
     },
   },
   {
