@@ -34,11 +34,3 @@ TodoDependencySchema.index(
     partialFilterExpression: { deletedAt: null },
   },
 );
-
-// prerequisiteId
-TodoDependencySchema.index(
-  { prerequisiteId: 1 },
-  {
-    partialFilterExpression: { deletedAt: null },
-  },
-);

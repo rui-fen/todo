@@ -49,19 +49,18 @@ export class Todo {
 export const TodoSchema = SchemaFactory.createForClass(Todo);
 
 TodoSchema.index({ name: 'text' });
+
 TodoSchema.index(
-  { dueDate: -1, _id: -1 },
+  { dueDate: -1 },
   { partialFilterExpression: { deletedAt: null } },
 );
+
 TodoSchema.index(
-  { priority: 1, _id: -1 },
+  { status: 1, dueDate: -1 },
   { partialFilterExpression: { deletedAt: null } },
 );
+
 TodoSchema.index(
-  { status: 1, dueDate: -1, _id: -1 },
-  { partialFilterExpression: { deletedAt: null } },
-);
-TodoSchema.index(
-  { priority: 1, dueDate: -1, _id: -1 },
+  { priority: 1, dueDate: -1 },
   { partialFilterExpression: { deletedAt: null } },
 );
