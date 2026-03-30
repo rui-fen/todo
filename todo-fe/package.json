@@ -1,6 +1,6 @@
 {
   "name": "todo-fe",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "private": true,
   "description": "A simple todo app frontend built with Next.js and Ant Design.",
   "scripts": {
