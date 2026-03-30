@@ -94,7 +94,7 @@ jobs:
               if [ $? -eq 0 ]; then
                 pm2 restart todo-backend
               else
-                pm2 start dist/main.js --name todo-backend
+                pm2 start "pnpm nest start:prod" --name todo-backend
                 pm2 save
                 pm2 startup -u $USER --hp $HOME
               fi
