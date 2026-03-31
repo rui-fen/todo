@@ -51,6 +51,61 @@ This project implements a full-stack TODO list application with **NestJS** backe
 
 **Requirement**: *"When a recurring TODO is marked as completed, the next occurrence should be created automatically."*
 
+**Prerequisites**: Recurring functionality **requires BOTH `dueDate` AND `recurrence` values to be present**. This is a fundamental design constraint enforced at the API level.
+
+**Design Rationale**:
+- **Logical consistency**: A recurring task without a due date has no baseline to calculate the next occurrence
+- **Data integrity**: Prevents invalid state where recurrence exists but cannot be computed
+- **Clear error messaging**: Returns `400 Bad Request` with message: *"Due date is required when recurrence is provided"*
+
+**Implementation**:
+- Validation occurs during **CREATE** and **UPDATE** operations (see `assertDueDateForRecurrence()` in [`todos.service.ts:769`](todo-be/src/todos/todos.service.ts#L769))
+- When `recurrence` is provided but `dueDate` is missing → `BadRequestException` is thrown
+- When `dueDate` exists without `recurrence` → valid (non-recurring task)
+- Both fields can be `null`/`undefined` → valid (non-recurring task)
+
+**Examples**:
+```typescript
+// ✅ Valid: Recurring task with due date
+POST /todo
+{
+  "name": "Weekly team meeting",
+  "dueDate": "2026-04-01T10:00:00Z",
+  "recurrence": { "type": "WEEKLY" }
+}
+
+// ✅ Valid: Non-recurring task with due date
+POST /todo
+{
+  "name": "One-time task",
+  "dueDate": "2026-04-01T10:00:00Z"
+}
+
+// ✅ Valid: Task without due date or recurrence
+POST /todo
+{
+  "name": "Backlog task"
+}
+
+// ❌ Invalid: Recurrence without due date
+POST /todo
+{
+  "name": "Invalid recurring task",
+  "recurrence": { "type": "DAILY" }
+}
+// Response: 400 Bad Request
+// "Due date is required when recurrence is provided"
+```
+
+**Edge Cases Handled**:
+1. **UPDATE with recurrence removal**: Setting `recurrence: null` while keeping `dueDate` → allowed (converts to non-recurring)
+2. **UPDATE with dueDate removal**: Setting `dueDate: null` while keeping `recurrence` → validation fails
+3. **Concurrent updates**: Transactions ensure validation and update are atomic
+
+---
+
+**Completion Behavior**: 
+
 **Interpretation**: Instead of creating a **new TODO**, I chose to **reset the existing TODO** back to `NOT_STARTED` with an updated due date. This decision was based on:
 
 - **Preserving context**: Dependencies remain intact, history is preserved
